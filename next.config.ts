@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Vercel runs Next.js natively — no static export needed here.
+  // Re-add output: "export" when deploying to S3/CloudFront.
 };
 
 export default nextConfig;
