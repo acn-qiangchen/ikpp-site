@@ -1,8 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Vercel runs Next.js natively — no static export needed here.
-  // Re-add output: "export" when deploying to S3/CloudFront.
+  // NEXT_EXPORT=true is set by the GitHub Actions workflow for S3/CloudFront.
+  // Vercel runs Next.js natively so this stays unset there.
+  ...(process.env.NEXT_EXPORT === "true" && { output: "export" }),
 };
 
 export default nextConfig;

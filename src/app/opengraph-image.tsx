@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 
-export const runtime = "edge";
+// "edge" enables dynamic OGP on Vercel. Omit for static export (S3/CloudFront).
+export const runtime = process.env.NEXT_EXPORT === "true" ? undefined : "edge";
 export const alt = "稲毛海浜公園 多目的広場問題を記録する";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
