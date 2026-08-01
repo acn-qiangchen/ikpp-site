@@ -10,7 +10,7 @@ resource "aws_cloudfront_distribution" "site" {
   is_ipv6_enabled     = true
   default_root_object = "index.html"
   price_class         = "PriceClass_200"
-  aliases             = [var.domain_name, "www.${var.domain_name}"]
+  aliases             = [local.fqdn]
 
   origin {
     domain_name              = aws_s3_bucket.site.bucket_regional_domain_name
@@ -55,7 +55,6 @@ resource "aws_cloudfront_distribution" "site" {
     max_ttl     = 0
   }
 
-  # sitemap / robots: no-cache
   ordered_cache_behavior {
     path_pattern           = "sitemap.xml"
     target_origin_id       = "s3-${aws_s3_bucket.site.id}"

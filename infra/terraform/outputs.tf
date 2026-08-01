@@ -1,6 +1,6 @@
 output "site_url" {
   description = "Update SITE_URL in src/lib/data.ts to this value"
-  value       = "https://${var.domain_name}"
+  value       = "https://${local.fqdn}"
 }
 
 output "cloudfront_domain" {
