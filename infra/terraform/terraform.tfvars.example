@@ -1,0 +1,5 @@
+domain_name  = "your-domain.com"
+project_name = "ikpp"
+github_org   = "acn-qiangchen"
+github_repo  = "ikpp-site"
+aws_region   = "ap-northeast-1"
