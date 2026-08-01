@@ -1,7 +1,7 @@
 export const SITE_NAME = "稲毛海浜公園 多目的広場問題を記録する";
 export const SITE_DESCRIPTION =
   "2002年FIFAワールドカップのキャンプ地として知られる稲毛海浜公園の天然芝多目的広場が、市民への説明なく臨時駐車場へ転用されています。この問題を事実に基づいて記録・発信します。";
-export const SITE_URL = "https://ikpp.example.com"; // TODO: replace with real URL
+  export const SITE_URL = "https://ikpp.tink9.com";
 
 export interface TimelineEvent {
   date: string;
