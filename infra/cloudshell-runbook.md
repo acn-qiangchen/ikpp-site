@@ -78,23 +78,13 @@ gets committed. You create it once in CloudShell — it lives in `~/` (persisten
 
 ```bash
 # Replace ikpp-tfstate-XXXXXXXX with the bucket name printed in A-2
-cat > ~/backend.hcl <<'EOF'
-bucket = "ikpp-tfstate-XXXXXXXX"
-key    = "ikpp/terraform.tfstate"
-region = "ap-northeast-1"
-EOF
-```
-
-Or write it with the variable still in scope:
-
-```bash
-cat > ~/backend.hcl <<EOF
+cat > $HOME/backend.hcl <<EOF
 bucket = "${BUCKET_NAME}"
 key    = "ikpp/terraform.tfstate"
 region = "ap-northeast-1"
 EOF
 
-cat ~/backend.hcl   # confirm it looks correct
+cat $HOME/backend.hcl   # confirm it looks correct
 ```
 
 ---
@@ -131,7 +121,7 @@ EOF
 cd ~/ikpp-site/infra/terraform
 
 # -backend-config points to the git-ignored file with your bucket name
-terraform init -backend-config=~/backend.hcl
+terraform init -backend-config=$HOME/backend.hcl
 terraform plan    # review: ~10 resources expected
 terraform apply   # type "yes" — CloudFront creation takes ~10 min
 ```
@@ -188,7 +178,7 @@ aws_region   = "ap-northeast-1"
 EOF
 
 cd infra/terraform
-terraform init -backend-config=~/backend.hcl
+terraform init -backend-config=$HOME/backend.hcl
 terraform plan
 terraform apply
 ```
