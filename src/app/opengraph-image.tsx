@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 
+export const dynamic = "force-static";
 export const alt = "稲毛海浜公園 多目的広場問題を記録する";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
