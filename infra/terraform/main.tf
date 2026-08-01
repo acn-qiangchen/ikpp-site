@@ -7,14 +7,9 @@ terraform {
     }
   }
 
-  # Remote state — fill in your account ID, then run:
-  #   terraform init -migrate-state
-  # The runbook (infra/cloudshell-runbook.md) creates this bucket automatically.
-  backend "s3" {
-    bucket = "ikpp-tfstate-REPLACE_WITH_ACCOUNT_ID"
-    key    = "ikpp/terraform.tfstate"
-    region = "ap-northeast-1"
-  }
+  # Remote state — bucket name is supplied via a git-ignored backend.hcl file.
+  # See infra/cloudshell-runbook.md for setup instructions.
+  backend "s3" {}
 }
 
 provider "aws" {

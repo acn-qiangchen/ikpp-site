@@ -32,21 +32,23 @@ tfenv use latest
 terraform version
 ```
 
-> **Next CloudShell session:** `~/.tfenv` and `~/bin` are already there.  
+> **Next CloudShell session:** `~/.tfenv` and `~/bin` are already there.
 > PATH is restored automatically via `.bashrc`. Just run `terraform version` to confirm.
 
 ---
 
 ### A-2. Create the Terraform state S3 bucket
 
-The state bucket must exist *before* `terraform init`. Create it once with the AWS CLI:
+The state bucket must exist *before* `terraform init`. The bucket name uses a random
+suffix — your AWS account ID never appears in any file that gets committed to git.
 
 ```bash
-ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-BUCKET_NAME="ikpp-tfstate-${ACCOUNT_ID}"
+# Generate a random 8-char suffix (no account ID)
+SUFFIX=$(openssl rand -hex 4)
+BUCKET_NAME="ikpp-tfstate-${SUFFIX}"
 REGION="ap-northeast-1"
 
-# Create bucket
+# Create the bucket
 aws s3api create-bucket \
   --bucket "${BUCKET_NAME}" \
   --region "${REGION}" \
@@ -63,44 +65,52 @@ aws s3api put-bucket-versioning \
   --bucket "${BUCKET_NAME}" \
   --versioning-configuration Status=Enabled
 
-echo "State bucket: ${BUCKET_NAME}"
+echo "State bucket created: ${BUCKET_NAME}"
+echo "Save this name — you will need it in the next step."
 ```
 
 ---
 
-### A-3. Clone the repo and patch main.tf
+### A-3. Create backend.hcl (git-ignored)
+
+`backend.hcl` holds the state bucket name. It is listed in `.gitignore` so it never
+gets committed. You create it once in CloudShell — it lives in `~/` (persistent).
+
+```bash
+# Replace ikpp-tfstate-XXXXXXXX with the bucket name printed in A-2
+cat > ~/backend.hcl <<'EOF'
+bucket = "ikpp-tfstate-XXXXXXXX"
+key    = "ikpp/terraform.tfstate"
+region = "ap-northeast-1"
+EOF
+```
+
+Or write it with the variable still in scope:
+
+```bash
+cat > ~/backend.hcl <<EOF
+bucket = "${BUCKET_NAME}"
+key    = "ikpp/terraform.tfstate"
+region = "ap-northeast-1"
+EOF
+
+cat ~/backend.hcl   # confirm it looks correct
+```
+
+---
+
+### A-4. Clone the repo
 
 ```bash
 # Replace YOUR_TOKEN with a GitHub PAT (repo scope)
 # Create one at: https://github.com/settings/tokens/new?scopes=repo&description=CloudShell
 git clone https://YOUR_TOKEN@github.com/acn-qiangchen/ikpp-site.git
 cd ikpp-site
-
-# Patch the backend bucket name in main.tf
-ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-sed -i "s/REPLACE_WITH_ACCOUNT_ID/${ACCOUNT_ID}/" infra/terraform/main.tf
-
-# Verify the change
-grep 'bucket' infra/terraform/main.tf
-# Expected: bucket = "ikpp-tfstate-123456789012"
-```
-
-Commit and push the patched `main.tf` back to the repo so future CloudShell sessions
-don't need to patch again:
-
-```bash
-git config user.email "qiang.chen@accenture.com"
-git config user.name "Qiang Chen"
-git add infra/terraform/main.tf
-git commit -m "Set Terraform state bucket name"
-git push origin feature/iac-ready
 ```
 
 ---
 
-### A-4. Create terraform.tfvars
-
-`terraform.tfvars` is git-ignored — create it in CloudShell each time you need it:
+### A-5. Create terraform.tfvars (git-ignored)
 
 ```bash
 cat > infra/terraform/terraform.tfvars <<'EOF'
@@ -115,19 +125,20 @@ EOF
 
 ---
 
-### A-5. Initialize and apply
+### A-6. Initialize and apply
 
 ```bash
 cd ~/ikpp-site/infra/terraform
 
-terraform init    # downloads providers, connects to S3 backend
+# -backend-config points to the git-ignored file with your bucket name
+terraform init -backend-config=~/backend.hcl
 terraform plan    # review: ~10 resources expected
 terraform apply   # type "yes" — CloudFront creation takes ~10 min
 ```
 
 ---
 
-### A-6. Copy outputs to GitHub secrets
+### A-7. Copy outputs to GitHub secrets
 
 ```bash
 terraform output
@@ -144,7 +155,7 @@ Open: **GitHub → Settings → Secrets and variables → Actions → New reposi
 
 ---
 
-### A-7. Update SITE_URL (on your local machine)
+### A-8. Update SITE_URL (on your local machine)
 
 In `src/lib/data.ts`, change:
 
@@ -156,19 +167,18 @@ Then commit and push to `main` — GitHub Actions deploys automatically.
 
 ---
 
-## Part B — Returning to an existing session
+## Part B — Returning to an existing CloudShell session
+
+`~/.tfenv`, `~/bin`, `~/backend.hcl` all persist — no reinstall needed.
 
 ```bash
-# PATH is restored from .bashrc automatically; confirm terraform is available
-terraform version
+terraform version   # confirm it's available
 
 cd ~/ikpp-site
 git pull
 
-cd infra/terraform
-
-# Re-create terraform.tfvars (see A-4 above)
-cat > terraform.tfvars <<'EOF'
+# Re-create terraform.tfvars (git-ignored, not persisted in repo)
+cat > infra/terraform/terraform.tfvars <<'EOF'
 subdomain    = "ikpp"
 root_domain  = "tink9.com"
 project_name = "ikpp"
@@ -177,7 +187,8 @@ github_repo  = "ikpp-site"
 aws_region   = "ap-northeast-1"
 EOF
 
-terraform init    # re-initializes against the S3 backend (fast, no download if cached)
+cd infra/terraform
+terraform init -backend-config=~/backend.hcl
 terraform plan
 terraform apply
 ```
@@ -191,7 +202,9 @@ cd ~/ikpp-site/infra/terraform
 terraform destroy   # type "yes"
 ```
 
-This removes: S3 site bucket, CloudFront distribution, ACM cert, Route 53 records, IAM role.  
-It does **not** remove:
+Removes: S3 site bucket, CloudFront distribution, ACM cert, Route 53 records, IAM role.
+
+Does **not** remove:
+
 - The `tink9.com` hosted zone
 - The `ikpp-tfstate-*` state bucket (delete manually if desired)
