@@ -33,7 +33,9 @@ data "aws_iam_policy_document" "github_oidc_trust" {
     condition {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_org}/${var.github_repo}:ref:refs/heads/main"]
+      # GitHub now includes numeric user/repo IDs in the sub claim:
+      # repo:ORG@ORG_ID/REPO@REPO_ID:ref:refs/heads/BRANCH
+      values   = ["repo:${var.github_org}@*/${var.github_repo}@*:*"]
     }
   }
 }
