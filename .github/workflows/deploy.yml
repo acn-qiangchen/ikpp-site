@@ -30,17 +30,6 @@ jobs:
           NEXT_EXPORT: "true"
           NEXT_PUBLIC_API_BASE_URL: ${{ secrets.NEXT_PUBLIC_API_BASE_URL }}
 
-      - name: Debug OIDC token claims
-        run: |
-          TOKEN=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sts.amazonaws.com" | jq -r '.value')
-          PAYLOAD=$(echo "$TOKEN" | cut -d'.' -f2)
-          # pad base64 to a multiple of 4
-          PAD=$(( 4 - ${#PAYLOAD} % 4 ))
-          [ $PAD -ne 4 ] && PAYLOAD="${PAYLOAD}$(printf '=%.0s' $(seq 1 $PAD))"
-          echo "OIDC claims:"
-          echo "$PAYLOAD" | base64 -d | jq '{iss, sub, aud, repository, ref, job_workflow_ref}'
-
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
