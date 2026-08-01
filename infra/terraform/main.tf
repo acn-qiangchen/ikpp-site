@@ -5,6 +5,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
   }
 
   # Remote state — bucket name is supplied via a git-ignored backend.hcl file.
@@ -21,8 +25,6 @@ provider "aws" {
   alias  = "us_east_1"
   region = "us-east-1"
 }
-
-data "aws_caller_identity" "current" {}
 
 locals {
   tags = {

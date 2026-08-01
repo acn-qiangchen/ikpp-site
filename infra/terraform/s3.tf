@@ -1,5 +1,9 @@
+resource "random_id" "bucket_suffix" {
+  byte_length = 4
+}
+
 resource "aws_s3_bucket" "site" {
-  bucket = "${var.project_name}-site-${data.aws_caller_identity.current.account_id}"
+  bucket = "${var.project_name}-site-${random_id.bucket_suffix.hex}"
   tags   = local.tags
 }
 
