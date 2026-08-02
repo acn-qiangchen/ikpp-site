@@ -28,5 +28,7 @@ export async function POST(req: NextRequest) {
     ContentType: contentType,
   });
   const url = await getSignedUrl(s3, command, { expiresIn: 300 });
-  return NextResponse.json({ url, key });
+  const siteUrl = (process.env.ADMIN_SITE_URL ?? "https://ikpp.tink9.com").replace(/\/$/, "");
+  const publicUrl = `${siteUrl}/${key}`;
+  return NextResponse.json({ url, key, publicUrl });
 }

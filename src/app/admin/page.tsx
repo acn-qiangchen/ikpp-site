@@ -88,7 +88,7 @@ export default function AdminPage() {
         body: JSON.stringify({ filename: file.name, contentType: file.type }),
       });
       if (!urlRes.ok) throw new Error("Failed to get upload URL");
-      const { url, key } = await urlRes.json();
+      const { url, publicUrl } = await urlRes.json();
 
       const putRes = await fetch(url, {
         method: "PUT",
@@ -101,7 +101,7 @@ export default function AdminPage() {
       const date = new Date().toLocaleDateString("ja-JP", { year: "numeric", month: "long" });
       const next: Content = {
         ...content,
-        photos: [...content.photos, { url: `/${key}`, title, date }],
+        photos: [...content.photos, { url: publicUrl, title, date }],
       };
       await saveContent(next);
       setStatus("アップロード完了");
