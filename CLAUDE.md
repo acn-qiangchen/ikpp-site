@@ -45,6 +45,15 @@ Because `output: "export"` is set:
 - `opengraph-image.tsx`, `sitemap.ts`, and `robots.ts` all require `export const dynamic = "force-static"`
 - Future backend features (admin site, public APIs) must be separate services (e.g., API Gateway + Lambda), not Next.js API routes
 
+### Testing
+
+**Always write and run tests before committing new API routes or utility functions.**
+
+- Every new `route.ts` under `src/app/api/` must have a `route.test.ts` alongside it.
+- Run `npm test` and confirm all tests pass before any `git commit`.
+- Use `vi.clearAllMocks()` in `beforeEach` (not just `mockSend.mockReset()`) when testing routes that check constructor mock call counts (`PutObjectCommand.mock.calls`, etc.) — otherwise calls accumulate across tests.
+- See existing tests (`src/app/api/admin/*/route.test.ts`) for the mock pattern: mock `@aws-sdk/client-s3` at the top, import the route with `await import()` after mocks are registered.
+
 ### Deployment
 
 GitHub Actions (`.github/workflows/deploy.yml`) deploys on push to `main` via OIDC to S3 + CloudFront invalidation. Required secrets: `AWS_DEPLOY_ROLE_ARN`, `AWS_REGION`, `S3_BUCKET_NAME`, `CLOUDFRONT_DISTRIBUTION_ID`, `NEXT_PUBLIC_API_BASE_URL`. See [`infra/cloudfront-s3.md`](infra/cloudfront-s3.md) for IAM setup.
