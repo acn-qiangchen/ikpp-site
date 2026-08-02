@@ -72,3 +72,29 @@ resource "aws_iam_role_policy" "github_deploy" {
   role   = aws_iam_role.github_deploy.id
   policy = data.aws_iam_policy_document.github_deploy.json
 }
+
+resource "aws_iam_user" "vercel_admin" {
+  name = "${var.project_name}-vercel-admin"
+  tags = local.tags
+}
+
+resource "aws_iam_access_key" "vercel_admin" {
+  user = aws_iam_user.vercel_admin.name
+}
+
+resource "aws_iam_user_policy" "vercel_admin" {
+  user = aws_iam_user.vercel_admin.name
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["s3:PutObject", "s3:GetObject", "s3:DeleteObject"]
+        Resource = [
+          "${aws_s3_bucket.site.arn}/content.json",
+          "${aws_s3_bucket.site.arn}/media/*"
+        ]
+      }
+    ]
+  })
+}

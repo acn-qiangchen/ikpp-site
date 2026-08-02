@@ -27,3 +27,15 @@ output "aws_region" {
   description = "→ GitHub secret: AWS_REGION"
   value       = var.aws_region
 }
+
+output "vercel_admin_aws_key_id" {
+  description = "→ Vercel env var: ADMIN_AWS_ACCESS_KEY_ID"
+  value       = aws_iam_access_key.vercel_admin.id
+  sensitive   = true
+}
+
+output "vercel_admin_aws_secret" {
+  description = "→ Vercel env var: ADMIN_AWS_SECRET_ACCESS_KEY"
+  value       = aws_iam_access_key.vercel_admin.secret
+  sensitive   = true
+}
