@@ -91,6 +91,46 @@ resource "aws_cloudfront_distribution" "site" {
     max_ttl     = 0
   }
 
+  # content.json: no cache + forward Origin so S3 returns CORS headers
+  ordered_cache_behavior {
+    path_pattern           = "content.json"
+    target_origin_id       = "s3-${aws_s3_bucket.site.id}"
+    viewer_protocol_policy = "redirect-to-https"
+    allowed_methods        = ["GET", "HEAD"]
+    cached_methods         = ["GET", "HEAD"]
+    compress               = true
+
+    forwarded_values {
+      query_string = false
+      cookies { forward = "none" }
+      headers      = ["Origin", "Access-Control-Request-Headers", "Access-Control-Request-Method"]
+    }
+
+    min_ttl     = 0
+    default_ttl = 0
+    max_ttl     = 0
+  }
+
+  # media/*: long cache + forward Origin so S3 returns CORS headers
+  ordered_cache_behavior {
+    path_pattern           = "media/*"
+    target_origin_id       = "s3-${aws_s3_bucket.site.id}"
+    viewer_protocol_policy = "redirect-to-https"
+    allowed_methods        = ["GET", "HEAD"]
+    cached_methods         = ["GET", "HEAD"]
+    compress               = true
+
+    forwarded_values {
+      query_string = false
+      cookies { forward = "none" }
+      headers      = ["Origin", "Access-Control-Request-Headers", "Access-Control-Request-Method"]
+    }
+
+    min_ttl     = 0
+    default_ttl = 86400
+    max_ttl     = 31536000
+  }
+
   custom_error_response {
     error_code            = 403
     response_code         = 404
