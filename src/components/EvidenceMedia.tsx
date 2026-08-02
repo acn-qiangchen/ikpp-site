@@ -1,19 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
-interface Photo {
-  url: string;
-  title: string;
-  date: string;
-}
-
-interface Video {
-  id: string;
-  title: string;
-  desc: string;
-  date: string;
-}
+import type { Photo, Video } from "@/lib/content-types";
 
 interface PendingVideo {
   title: string;
