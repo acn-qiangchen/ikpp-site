@@ -48,6 +48,16 @@ resource "aws_s3_bucket_policy" "site" {
 
 resource "aws_s3_bucket_cors_configuration" "site" {
   bucket = aws_s3_bucket.site.id
+
+  # GET: allows EvidenceMedia on Vercel preview to fetch content.json and media files
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = ["GET"]
+    allowed_origins = ["https://*.vercel.app"]
+    max_age_seconds = 3600
+  }
+
+  # PUT: allows browser to upload photos directly to S3 via pre-signed URLs
   cors_rule {
     allowed_headers = ["*"]
     allowed_methods = ["PUT"]
