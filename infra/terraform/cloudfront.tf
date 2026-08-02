@@ -6,6 +6,9 @@ resource "aws_cloudfront_function" "url_rewrite" {
   code    = <<-EOT
     function handler(event) {
       var uri = event.request.uri;
+      if (uri.startsWith('/voices/') && uri.endsWith('.json')) {
+        return { statusCode: 403, statusDescription: 'Forbidden' };
+      }
       if (uri.endsWith('/')) {
         event.request.uri += 'index.html';
       } else if (!uri.includes('.')) {

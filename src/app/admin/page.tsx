@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { Content, Photo, Video } from "@/lib/content-types";
+import type { Content, Photo, Video, VoiceSubmission } from "@/lib/content-types";
 import { moveItem } from "@/lib/utils";
 
-const EMPTY_CONTENT: Content = { photos: [], videos: [] };
+const EMPTY_CONTENT: Content = { photos: [], videos: [], voices: [] };
 
 export default function AdminPage() {
   const [authed, setAuthed] = useState<boolean | null>(null);
@@ -24,11 +24,16 @@ export default function AdminPage() {
   const [showAddVideo, setShowAddVideo] = useState(false);
   const [videoForm, setVideoForm] = useState<Video>({ id: "", title: "", desc: "", date: "" });
 
+  // Voices state
+  const [submissions, setSubmissions] = useState<VoiceSubmission[]>([]);
+  const [publishingId, setPublishingId] = useState<string | null>(null);
+  const [publishAttr, setPublishAttr] = useState("");
+
   useEffect(() => {
     fetch("/api/admin/verify", { method: "POST" })
       .then((r) => {
         setAuthed(r.ok);
-        if (r.ok) loadContent();
+        if (r.ok) { loadContent(); loadSubmissions(); }
       })
       .catch(() => setAuthed(false));
   }, []);
@@ -39,7 +44,35 @@ export default function AdminPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "read" }),
     });
-    if (r.ok) setContent(await r.json());
+    if (r.ok) {
+      const data = await r.json();
+      setContent({ ...EMPTY_CONTENT, ...data });
+    }
+  }
+
+  async function loadSubmissions() {
+    const r = await fetch("/api/admin/voices", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "list" }),
+    });
+    if (r.ok) setSubmissions(await r.json());
+  }
+
+  async function voicesAction(payload: Record<string, string>) {
+    setStatus("保存中...");
+    try {
+      const r = await fetch("/api/admin/voices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!r.ok) throw new Error("Request failed");
+      setStatus("保存完了");
+      await Promise.all([loadContent(), loadSubmissions()]);
+    } catch (err) {
+      setStatus(`エラー: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }
 
   async function saveContent(next: Content) {
@@ -65,6 +98,7 @@ export default function AdminPage() {
     if (r.ok) {
       setAuthed(true);
       loadContent();
+      loadSubmissions();
     } else {
       setLoginError("パスワードが正しくありません");
     }
@@ -458,6 +492,113 @@ export default function AdminPage() {
             onChange={uploadPhoto}
             className="block text-sm"
           />
+        </div>
+      </section>
+
+      {/* ── 寄せられた声 ──────────────────────────── */}
+      <section className="space-y-6">
+        <h2 className="text-xl font-bold text-gray-900">寄せられた声</h2>
+
+        {/* Pending submissions */}
+        <div>
+          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+            未公開 ({submissions.length})
+          </h3>
+          {submissions.length === 0 ? (
+            <p className="text-sm text-gray-400">投稿はありません。</p>
+          ) : (
+            <div className="space-y-3">
+              {submissions.map((s) => (
+                <div key={s.id} className="bg-white border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-start justify-between gap-4 mb-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs text-gray-500 mb-1">
+                        {s.relationship || "（関係未選択）"} ·{" "}
+                        {new Date(s.submittedAt).toLocaleString("ja-JP")}
+                      </div>
+                      <div className="text-sm text-gray-800 leading-relaxed">{s.comment}</div>
+                      {s.email && (
+                        <div className="text-xs text-gray-400 mt-1">メール: {s.email}</div>
+                      )}
+                    </div>
+                  </div>
+
+                  {publishingId === s.id ? (
+                    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100">
+                      <input
+                        value={publishAttr}
+                        onChange={(e) => setPublishAttr(e.target.value)}
+                        placeholder="掲載時の肩書き（例: 40代・長年の利用者）"
+                        className="flex-1 border border-gray-300 rounded px-3 py-1 text-sm"
+                      />
+                      <button
+                        onClick={() => {
+                          voicesAction({ action: "publish", id: s.id, attr: publishAttr });
+                          setPublishingId(null);
+                        }}
+                        className="bg-green-600 text-white rounded px-3 py-1 text-xs font-medium hover:bg-green-700"
+                      >
+                        確定
+                      </button>
+                      <button
+                        onClick={() => setPublishingId(null)}
+                        className="border border-gray-300 rounded px-3 py-1 text-xs hover:bg-gray-50"
+                      >
+                        キャンセル
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
+                      <button
+                        onClick={() => {
+                          setPublishingId(s.id);
+                          setPublishAttr(s.relationship);
+                        }}
+                        className="bg-green-600 text-white rounded px-3 py-1 text-xs font-medium hover:bg-green-700"
+                      >
+                        公開
+                      </button>
+                      <button
+                        onClick={() => voicesAction({ action: "delete", id: s.id })}
+                        className="border border-red-300 text-red-600 rounded px-3 py-1 text-xs hover:bg-red-50"
+                      >
+                        削除
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Published voices */}
+        <div>
+          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+            公開済み ({(content.voices ?? []).length})
+          </h3>
+          {(content.voices ?? []).length === 0 ? (
+            <p className="text-sm text-gray-400">公開済みの声はありません。</p>
+          ) : (
+            <div className="space-y-3">
+              {(content.voices ?? []).map((v) => (
+                <div key={v.id} className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs text-gray-500 mb-1">
+                      {v.attr} · 公開: {new Date(v.publishedAt).toLocaleString("ja-JP")}
+                    </div>
+                    <div className="text-sm text-gray-800 italic">&ldquo;{v.comment}&rdquo;</div>
+                  </div>
+                  <button
+                    onClick={() => voicesAction({ action: "unpublish", id: v.id })}
+                    className="border border-gray-300 rounded px-3 py-1 text-xs hover:bg-white shrink-0"
+                  >
+                    非公開
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
     </div>
