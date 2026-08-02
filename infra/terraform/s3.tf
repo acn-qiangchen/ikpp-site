@@ -45,3 +45,13 @@ resource "aws_s3_bucket_policy" "site" {
 
   depends_on = [aws_s3_bucket_public_access_block.site]
 }
+
+resource "aws_s3_bucket_cors_configuration" "site" {
+  bucket = aws_s3_bucket.site.id
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = ["PUT"]
+    allowed_origins = ["https://ikpp.tink9.com", "https://*.vercel.app"]
+    max_age_seconds = 3600
+  }
+}
