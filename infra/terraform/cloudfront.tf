@@ -1,3 +1,21 @@
+resource "aws_cloudfront_function" "url_rewrite" {
+  name    = "${var.project_name}-url-rewrite"
+  runtime = "cloudfront-js-2.0"
+  comment = "Rewrite clean URLs to .html for S3 static export"
+  publish = true
+  code    = <<-EOT
+    function handler(event) {
+      var uri = event.request.uri;
+      if (uri.endsWith('/')) {
+        event.request.uri += 'index.html';
+      } else if (!uri.includes('.')) {
+        event.request.uri += '.html';
+      }
+      return event.request;
+    }
+  EOT
+}
+
 resource "aws_cloudfront_origin_access_control" "site" {
   name                              = "${var.project_name}-oac"
   origin_access_control_origin_type = "s3"
@@ -29,6 +47,11 @@ resource "aws_cloudfront_distribution" "site" {
     forwarded_values {
       query_string = false
       cookies { forward = "none" }
+    }
+
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.url_rewrite.arn
     }
 
     min_ttl     = 0
