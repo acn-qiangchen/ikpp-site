@@ -34,7 +34,7 @@ export default function AdminPage() {
   const [videoForm, setVideoForm] = useState({ id: "", title: "", desc: "", date: "" });
 
   useEffect(() => {
-    fetch("/api/admin/verify")
+    fetch("/api/admin/verify", { method: "POST" })
       .then((r) => {
         setAuthed(r.ok);
         if (r.ok) loadContent();
@@ -43,7 +43,11 @@ export default function AdminPage() {
   }, []);
 
   async function loadContent() {
-    const r = await fetch("/api/admin/content");
+    const r = await fetch("/api/admin/content", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "read" }),
+    });
     if (r.ok) setContent(await r.json());
   }
 
@@ -51,7 +55,7 @@ export default function AdminPage() {
     const r = await fetch("/api/admin/content", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(next),
+      body: JSON.stringify({ action: "write", content: next }),
     });
     if (!r.ok) throw new Error("Save failed");
     setContent(next);

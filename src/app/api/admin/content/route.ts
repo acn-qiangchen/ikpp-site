@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { S3Client, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 
-export const dynamic = "force-static";
-
 const s3 = new S3Client({
   region: process.env.ADMIN_AWS_REGION ?? "ap-northeast-1",
   credentials: {
@@ -25,11 +23,8 @@ async function readContent() {
   }
 }
 
-export async function GET() {
-  const content = await readContent();
-  return NextResponse.json(content);
-}
-
+// GET is used only by admin page — POST-only to avoid static export conflicts.
+// Evidence page reads content.json directly from CloudFront, not this route.
 export async function POST(req: NextRequest) {
   const session = req.cookies.get("admin-session")?.value;
   if (!session || session !== process.env.ADMIN_PASSWORD) {
@@ -37,11 +32,18 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
+
+  // { action: "read" } → return current content without writing
+  if (body.action === "read") {
+    return NextResponse.json(await readContent());
+  }
+
+  // { action: "write", content: {...} } → save to S3
   await s3.send(
     new PutObjectCommand({
       Bucket: BUCKET,
       Key: KEY,
-      Body: JSON.stringify(body),
+      Body: JSON.stringify(body.content),
       ContentType: "application/json",
     })
   );
