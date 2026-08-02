@@ -92,8 +92,19 @@ resource "aws_iam_user_policy" "vercel_admin" {
         Action   = ["s3:PutObject", "s3:GetObject", "s3:DeleteObject"]
         Resource = [
           "${aws_s3_bucket.site.arn}/content.json",
-          "${aws_s3_bucket.site.arn}/media/*"
+          "${aws_s3_bucket.site.arn}/media/*",
+          "${aws_s3_bucket.site.arn}/voices/*"
         ]
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["s3:ListBucket"]
+        Resource = [aws_s3_bucket.site.arn]
+        Condition = {
+          StringLike = {
+            "s3:prefix" = ["voices/*"]
+          }
+        }
       }
     ]
   })
