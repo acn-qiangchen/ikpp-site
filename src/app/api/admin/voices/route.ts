@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     const list = await s3.send(
       new ListObjectsV2Command({ Bucket: BUCKET, Prefix: "voices/" })
     );
-    const keys = (list.Contents ?? []).map((o) => o.Key!).filter(Boolean);
+    const keys = (list.Contents ?? []).map((o) => o.Key!).filter((k) => k.endsWith(".json"));
     const submissions: VoiceSubmission[] = await Promise.all(
       keys.map(async (key) => {
         const res = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));

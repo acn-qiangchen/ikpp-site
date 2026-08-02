@@ -51,6 +51,24 @@ describe('POST /api/admin/voices — list', () => {
     expect(await res.json()).toEqual([])
   })
 
+  it('ignores non-JSON files (Next.js static export artifacts) in voices/ prefix', async () => {
+    const sub = { id: 'a', relationship: 'r', comment: 'c', email: '', submittedAt: '2026-08-01T10:00:00.000Z' }
+    mockSend
+      .mockResolvedValueOnce({
+        Contents: [
+          { Key: 'voices/__next._PAGE__.txt' },
+          { Key: 'voices/__next._full.txt' },
+          { Key: 'voices/a.json' },
+        ],
+      })
+      .mockResolvedValueOnce({ Body: { transformToString: () => Promise.resolve(JSON.stringify(sub)) } })
+    const res = await POST(makeReq({ action: 'list' }, true))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body).toHaveLength(1)
+    expect(body[0].id).toBe('a')
+  })
+
   it('returns submissions sorted newest first', async () => {
     const sub1 = { id: 'a', relationship: 'r', comment: 'c1', email: '', submittedAt: '2026-08-01T10:00:00.000Z' }
     const sub2 = { id: 'b', relationship: 'r', comment: 'c2', email: '', submittedAt: '2026-08-02T10:00:00.000Z' }
